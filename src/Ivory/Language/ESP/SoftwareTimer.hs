@@ -26,10 +26,12 @@ swtimer = package "swtimer" $ do
 
 -- | Equivalent to 'os_timer_t *'
 type OsTimerRef = Ptr Global (Stored ())
--- FIXME: This should be os_timer_t in some fashion, not just a void*
+-- FIXME: This should be os_timer_t in some fashion, not just a void*.
+-- It should really just be an opaque pointer since we should not
+-- expose ETSTimer, even if that's the underlying type.
 
 -- | Equivalent to 'os_timer_func_t'
-type OsTimerFunc = '[Ptr Global (Stored ())] :-> () 
+type OsTimerFunc = '[Ptr Global (Stored ())] :-> ()
 
 os_timer_arm :: Def('[OsTimerRef, Uint32, IBool] :-> ())
 os_timer_arm = importProc "os_timer_arm" "osapi.h"
