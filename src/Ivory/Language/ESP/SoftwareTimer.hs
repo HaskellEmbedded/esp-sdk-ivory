@@ -7,6 +7,10 @@ Maintainer  : hodapp87@gmail.com
 Stability   : experimental
 Portability : POSIX
 
+Unless otherwise specified, every Ivory procedure given here follows
+its identically-named C function in the ESP8266 Non-OS SDK API Guide,
+section 3.1 ("Software Timer").
+
 -}
 
 {-# LANGUAGE DataKinds, TypeOperators #-}
@@ -15,7 +19,8 @@ module Ivory.Language.ESP.SoftwareTimer where
 
 import Ivory.Language
 
--- | Top-level Ivory module for software timers in Espressif SDK
+-- | Top-level Ivory module for software timers (section 3.1 of non-OS
+-- API) in Espressif SDK
 swtimer :: Module
 swtimer = package "swtimer" $ do
   incl os_timer_arm

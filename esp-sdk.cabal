@@ -16,7 +16,9 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Ivory.Language.ESP.SoftwareTimer
+  exposed-modules:     Ivory.Language.IvoryUtil,
+                       Ivory.Language.ESP.SoftwareTimer,
+                       Ivory.Language.ESP.System
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base, ivory
