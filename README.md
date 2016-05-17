@@ -9,3 +9,4 @@ See *ESP8266 Non-OS SDK API Guide* at
 <https://espressif.com/en/support/download/documents> for a reference
 on the API that this is wrapping.
 
+[![Build Status](https://travis-ci.org/HaskellEmbedded/esp-sdk-ivory.svg?branch=master)](https://travis-ci.org/HaskellEmbedded/esp-sdk-ivory)
