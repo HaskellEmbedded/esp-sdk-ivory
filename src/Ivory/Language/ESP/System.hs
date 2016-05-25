@@ -13,7 +13,10 @@ section 3.3 ("System APIs").
 
 -}
 
-{-# LANGUAGE DataKinds, OverloadedStrings, TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Ivory.Language.ESP.System where
 
@@ -22,10 +25,28 @@ import Ivory.Language.IvoryUtil
 import Ivory.Language
 import Ivory.Language.Type
 
+import qualified Ivory.Language.Syntax.Concrete.ParseAST as PA
+import qualified Ivory.Language.Syntax.Concrete.Location as L
+import qualified Ivory.Language.Syntax.Concrete.QQ.StructQQ as SQQ
+
+SQQ.fromStruct $ PA.AbstractDef "os_event_t" "os_type.h" L.NoLoc
+-- FIXME: Need os_task_t, os_event_t, os_signal_t, os_param_t
+--
+-- os_task_t is just a function pointer (returning void, only
+-- parameter is os_event_t*).  os_event_t is ETSEvent which is 'struct
+-- ETSEventTag'; see sdk/include/ets_sys.h.  It has inside: ETSSignal
+-- sig, ETSParam par.  I am not sure if I should copy these into a
+-- struct or not.  os_signal_t is just ETSSignal, and os_param_t is
+-- ETSParam, and both in turn are uint32_t (os_type.h/ets_sys.h).
+
+-- | Equivalent to 'os_event_t' (opaque type)
+type OsTaskT = Struct "os_event_t"
+
 -- | Top-level Ivory module for System API (section 3.3 of non-OS API
 -- docs) in Espressif SDK
 system :: Module
 system = package "system" $ do
+  defStruct (Proxy :: Proxy "os_event_t")
   incl system_get_sdk_version
   incl system_restore
   incl system_restart

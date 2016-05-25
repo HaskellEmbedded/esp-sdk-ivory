@@ -18,7 +18,8 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Ivory.Language.IvoryUtil,
                        Ivory.Language.ESP.SoftwareTimer,
-                       Ivory.Language.ESP.System
+                       Ivory.Language.ESP.System,
+                       Ivory.Language.ESP.SpiFlash
   -- other-modules:       
   -- other-extensions:
   -- -ddump-splices ?
@@ -33,4 +34,5 @@ Test-Suite run-ivory
   build-depends:       base, ivory, ivory-backend-c
   other-modules:       Ivory.Language.IvoryUtil,
                        Ivory.Language.ESP.SoftwareTimer,
-                       Ivory.Language.ESP.System
+                       Ivory.Language.ESP.System,
+                       Ivory.Language.ESP.SpiFlash
