@@ -29,7 +29,7 @@ import qualified Ivory.Language.Syntax.Concrete.ParseAST as PA
 import qualified Ivory.Language.Syntax.Concrete.Location as L
 import qualified Ivory.Language.Syntax.Concrete.QQ.StructQQ as SQQ
 
--- FIXME: Get array types into this structure
+-- FIXME: Get array types into this structure as marked
 SQQ.fromStruct $ PA.StructDef "station_config"
   [ PA.Field "ssid"      (PA.TyWord PA.Word32) L.NoLoc -- uint8[32]
   , PA.Field "password"  (PA.TyWord PA.Word32) L.NoLoc -- uint8[64]
@@ -39,14 +39,30 @@ SQQ.fromStruct $ PA.StructDef "station_config"
 
 -- FIXME: Get pointer types into this structure
 --
--- FIXME: I can't use two 'ssid' or 'bssid' fields in the same file,
--- though C permits this.  However, I can't change it here without
--- breaking compatibility.
+-- FIXME: 'ssid_scan' should be 'ssid', 'bssid_scan' should be
+-- 'bssid', but I can't use two 'ssid' or 'bssid' fields in the same
+-- file, though C permits this.  However, I can't change it here
+-- without breaking compatibility.
 SQQ.fromStruct $ PA.StructDef "scan_config"
-  [ PA.Field "ssid_fixme"  (PA.TyWord PA.Word8) L.NoLoc -- uint8*
-  , PA.Field "bssid_fixme" (PA.TyWord PA.Word8) L.NoLoc -- uint8*
+  [ PA.Field "ssid_scan"   (PA.TyWord PA.Word8) L.NoLoc -- uint8*
+  , PA.Field "bssid_scan"  (PA.TyWord PA.Word8) L.NoLoc -- uint8*
   , PA.Field "channel"     (PA.TyWord PA.Word8) L.NoLoc
   , PA.Field "show_hidden" (PA.TyWord PA.Word8) L.NoLoc
+  ] L.NoLoc
+
+-- FIXME: Get array types into this structure as marked
+-- 
+-- FIXME: Same deal below with ssid_ap/password_ap/channel_ap (should
+-- be ssid/password/channel)
+SQQ.fromStruct $ PA.StructDef "softap_config"
+  [ PA.Field "ssid_ap" (PA.TyWord PA.Word8) L.NoLoc -- uint8[32]
+  , PA.Field "password_ap" (PA.TyWord PA.Word8) L.NoLoc -- uint8[64]
+  , PA.Field "ssid_len" (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "channel_ap" (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "authmode" (PA.TyWord PA.Word8) L.NoLoc -- AUTH_MODE?
+  , PA.Field "ssid_hidden" (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "max_connection" (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "beacon_interval" (PA.TyWord PA.Word16) L.NoLoc
   ] L.NoLoc
 
 -- | Equivalent to @struct station_config@
@@ -55,10 +71,14 @@ type StationConfig = Struct "station_config"
 -- | Equivalent to @struct scan_config@
 type ScanConfig = Struct "scan_config"
 
+-- | Equivalent to @struct softap_config@
+type SoftAPConfig = Struct "softap_config"
+
 wifi :: Module
 wifi = package "wifi" $ do
   defStruct (Proxy :: Proxy "station_config")
   defStruct (Proxy :: Proxy "scan_config")
+  defStruct (Proxy :: Proxy "softap_config")
   incl wifi_get_opmode
   incl wifi_get_opmode_default
   incl wifi_set_opmode
@@ -75,7 +95,6 @@ wifi = package "wifi" $ do
   incl wifi_station_disconnect
   incl wifi_station_get_connect_status
   incl wifi_station_scan
-  incl scan_done_cb_t
   incl wifi_station_ap_number_set
   incl wifi_station_get_ap_info
   incl wifi_station_ap_change
@@ -246,86 +265,82 @@ type ScanDoneCbT s = '[Ptr s (Stored ()), Status] :-> ()
 wifi_station_scan :: Def('[Ref s ScanConfig, ProcPtr (ScanDoneCbT t)] ':-> IBool)
 wifi_station_scan = importProc "wifi_station_scan" "user_interface.h"
 
--- FIXME (auto-generated)
-scan_done_cb_t :: Def('[] ':-> ())
-scan_done_cb_t = importProc "scan_done_cb_t" "user_interface.h"
-
--- FIXME (auto-generated)
-wifi_station_ap_number_set :: Def('[] ':-> ())
+wifi_station_ap_number_set :: Def('[Uint8] ':-> IBool)
 wifi_station_ap_number_set = importProc "wifi_station_ap_number_set" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_get_ap_info :: Def('[] ':-> ())
+-- FIXME: Need array of StationConfig for argument
+wifi_station_get_ap_info :: Def('[] ':-> Uint8)
 wifi_station_get_ap_info = importProc "wifi_station_get_ap_info" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_ap_change :: Def('[] ':-> ())
+wifi_station_ap_change :: Def('[Uint8] ':-> IBool)
 wifi_station_ap_change = importProc "wifi_station_ap_change" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_get_current_ap_id :: Def('[] ':-> ())
+wifi_station_get_current_ap_id :: Def('[] ':-> Uint8)
 wifi_station_get_current_ap_id = importProc "wifi_station_get_current_ap_id" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_get_auto_connect :: Def('[] ':-> ())
+wifi_station_get_auto_connect :: Def('[] ':-> Uint8)
 wifi_station_get_auto_connect = importProc "wifi_station_get_auto_connect" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_set_auto_connect :: Def('[] ':-> ())
+wifi_station_set_auto_connect :: Def('[Uint8] ':-> IBool)
 wifi_station_set_auto_connect = importProc "wifi_station_set_auto_connect" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_dhcpc_start :: Def('[] ':-> ())
+wifi_station_dhcpc_start :: Def('[] ':-> IBool)
 wifi_station_dhcpc_start = importProc "wifi_station_dhcpc_start" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_dhcpc_stop :: Def('[] ':-> ())
+wifi_station_dhcpc_stop :: Def('[] ':-> IBool)
 wifi_station_dhcpc_stop = importProc "wifi_station_dhcpc_stop" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_dhcpc_status :: Def('[] ':-> ())
+-- | Equivalent to @dhcp_status@
+type DhcpStatus = Sint32
+
+-- | Equivalent to @DHCP_STOPPED@ of @dhcp_status@
+status_dhcp_stopped :: DhcpStatus
+status_dhcp_stopped = extern "DHCP_STOPPED" "user_interface.h"
+
+-- | Equivalent to @DHCP_STARTED@ of @dhcp_status@
+status_dhcp_started :: DhcpStatus
+status_dhcp_started = extern "DHCP_STARTED" "user_interface.h"
+
+wifi_station_dhcpc_status :: Def('[] ':-> DhcpStatus)
 wifi_station_dhcpc_status = importProc "wifi_station_dhcpc_status" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_dhcpc_set_maxtry :: Def('[] ':-> ())
+wifi_station_dhcpc_set_maxtry :: Def('[Uint8] ':-> IBool)
 wifi_station_dhcpc_set_maxtry = importProc "wifi_station_dhcpc_set_maxtry" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_set_reconnect_policy :: Def('[] ':-> ())
+wifi_station_set_reconnect_policy :: Def('[IBool] ':-> IBool)
 wifi_station_set_reconnect_policy = importProc "wifi_station_set_reconnect_policy" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_get_rssi :: Def('[] ':-> ())
+wifi_station_get_rssi :: Def('[] ':-> Sint8)
 wifi_station_get_rssi = importProc "wifi_station_get_rssi" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_set_hostname :: Def('[] ':-> ())
+wifi_station_set_hostname :: Def('[IString] ':-> IBool)
 wifi_station_set_hostname = importProc "wifi_station_set_hostname" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_station_get_hostname :: Def('[] ':-> ())
+-- FIXME - Is this the right way to return a string?
+wifi_station_get_hostname :: Def('[] ':-> CBytes s)
 wifi_station_get_hostname = importProc "wifi_station_get_hostname" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_get_config :: Def('[] ':-> ())
+wifi_softap_get_config :: Def('[Ref s SoftAPConfig] ':-> IBool)
 wifi_softap_get_config = importProc "wifi_softap_get_config" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_get_config_default :: Def('[] ':-> ())
+wifi_softap_get_config_default :: Def('[Ref s SoftAPConfig] ':-> IBool)
 wifi_softap_get_config_default = importProc "wifi_softap_get_config_default" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_set_config :: Def('[] ':-> ())
+wifi_softap_set_config :: Def('[Ref s SoftAPConfig] ':-> IBool)
 wifi_softap_set_config = importProc "wifi_softap_set_config" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_set_config_current :: Def('[] ':-> ())
+wifi_softap_set_config_current :: Def('[Ref s SoftAPConfig] ':-> IBool)
 wifi_softap_set_config_current = importProc "wifi_softap_set_config_current" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_get_station_num :: Def('[] ':-> ())
+wifi_softap_get_station_num :: Def('[] ':-> Uint8)
 wifi_softap_get_station_num = importProc "wifi_softap_get_station_num" "user_interface.h"
 
+-- Gaaaah.
+-- struct station_info {
+--        STAILQ_ENTRY(station_info)      next;
+--        uint8 bssid[6];
+--        struct ip_addr ip;
+-- };
 -- FIXME (auto-generated)
 wifi_softap_get_station_info :: Def('[] ':-> ())
 wifi_softap_get_station_info = importProc "wifi_softap_get_station_info" "user_interface.h"
@@ -334,12 +349,10 @@ wifi_softap_get_station_info = importProc "wifi_softap_get_station_info" "user_i
 wifi_softap_free_station_info :: Def('[] ':-> ())
 wifi_softap_free_station_info = importProc "wifi_softap_free_station_info" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_dhcps_start :: Def('[] ':-> ())
+wifi_softap_dhcps_start :: Def('[] ':-> IBool)
 wifi_softap_dhcps_start = importProc "wifi_softap_dhcps_start" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_dhcps_stop :: Def('[] ':-> ())
+wifi_softap_dhcps_stop :: Def('[] ':-> IBool)
 wifi_softap_dhcps_stop = importProc "wifi_softap_dhcps_stop" "user_interface.h"
 
 -- FIXME (auto-generated)
@@ -350,20 +363,16 @@ wifi_softap_set_dhcps_lease = importProc "wifi_softap_set_dhcps_lease" "user_int
 wifi_softap_get_dhcps_lease :: Def('[] ':-> ())
 wifi_softap_get_dhcps_lease = importProc "wifi_softap_get_dhcps_lease" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_set_dhcps_lease_time :: Def('[] ':-> ())
+wifi_softap_set_dhcps_lease_time :: Def('[Uint32] ':-> IBool)
 wifi_softap_set_dhcps_lease_time = importProc "wifi_softap_set_dhcps_lease_time" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_get_dhcps_lease_time :: Def('[] ':-> ())
+wifi_softap_get_dhcps_lease_time :: Def('[] ':-> Uint32)
 wifi_softap_get_dhcps_lease_time = importProc "wifi_softap_get_dhcps_lease_time" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_reset_dhcps_lease_time :: Def('[] ':-> ())
+wifi_softap_reset_dhcps_lease_time :: Def('[] ':-> IBool)
 wifi_softap_reset_dhcps_lease_time = importProc "wifi_softap_reset_dhcps_lease_time" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_dhcps_status :: Def('[] ':-> ())
+wifi_softap_dhcps_status :: Def('[] ':-> DhcpStatus)
 wifi_softap_dhcps_status = importProc "wifi_softap_dhcps_status" "user_interface.h"
 
 -- FIXME (auto-generated)
