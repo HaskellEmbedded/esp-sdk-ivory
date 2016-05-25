@@ -19,7 +19,8 @@ library
   exposed-modules:     Ivory.Language.IvoryUtil,
                        Ivory.Language.ESP.SoftwareTimer,
                        Ivory.Language.ESP.System,
-                       Ivory.Language.ESP.SpiFlash
+                       Ivory.Language.ESP.SpiFlash,
+                       Ivory.Language.ESP.WiFi
   -- other-modules:       
   -- other-extensions:
   -- -ddump-splices ?
@@ -35,4 +36,5 @@ Test-Suite run-ivory
   other-modules:       Ivory.Language.IvoryUtil,
                        Ivory.Language.ESP.SoftwareTimer,
                        Ivory.Language.ESP.System,
-                       Ivory.Language.ESP.SpiFlash
+                       Ivory.Language.ESP.SpiFlash,
+                       Ivory.Language.ESP.WiFi
