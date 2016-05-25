@@ -56,7 +56,8 @@ swtimer = package "swtimer" $ do
   incl os_timer_arm_us
 
 -- | Equivalent to 'os_timer_func_t'
-type OsTimerFuncT = '[Ptr Global (Stored ())] :-> ()
+type OsTimerFuncT s = '[Ptr s (Stored ())] :-> ()
+-- FIXME: I'm not sure if that's the best way to express a void*
 
 os_timer_arm :: Def('[Ref s OsTimerT, Uint32, IBool] :-> ())
 os_timer_arm = importProc "os_timer_arm" "osapi.h"
@@ -65,7 +66,7 @@ os_timer_disarm :: Def('[Ref s OsTimerT] :-> ())
 os_timer_disarm = importProc "os_timer_disarm" "osapi.h"
 
 os_timer_setfn ::
-  Def('[Ref s OsTimerT, ProcPtr OsTimerFuncT, Ptr Global (Stored ())] :-> ())
+  Def('[Ref s OsTimerT, ProcPtr (OsTimerFuncT t), Ptr Global (Stored ())] :-> ())
 os_timer_setfn = importProc "os_timer_setfn" "osapi.h"
 
 system_timer_reinit :: Def('[] :-> ())

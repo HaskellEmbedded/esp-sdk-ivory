@@ -37,12 +37,28 @@ SQQ.fromStruct $ PA.StructDef "station_config"
   , PA.Field "bssid"     (PA.TyWord PA.Word32) L.NoLoc -- uint8[6]
   ] L.NoLoc
 
+-- FIXME: Get pointer types into this structure
+--
+-- FIXME: I can't use two 'ssid' or 'bssid' fields in the same file,
+-- though C permits this.  However, I can't change it here without
+-- breaking compatibility.
+SQQ.fromStruct $ PA.StructDef "scan_config"
+  [ PA.Field "ssid_fixme"  (PA.TyWord PA.Word8) L.NoLoc -- uint8*
+  , PA.Field "bssid_fixme" (PA.TyWord PA.Word8) L.NoLoc -- uint8*
+  , PA.Field "channel"     (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "show_hidden" (PA.TyWord PA.Word8) L.NoLoc
+  ] L.NoLoc
+
 -- | Equivalent to @struct station_config@
 type StationConfig = Struct "station_config"
+
+-- | Equivalent to @struct scan_config@
+type ScanConfig = Struct "scan_config"
 
 wifi :: Module
 wifi = package "wifi" $ do
   defStruct (Proxy :: Proxy "station_config")
+  defStruct (Proxy :: Proxy "scan_config")
   incl wifi_get_opmode
   incl wifi_get_opmode_default
   incl wifi_set_opmode
@@ -115,8 +131,20 @@ wifi = package "wifi" $ do
   incl wifi_register_rfid_locp_recv_cb
   incl wifi_unregister_rfid_locp_recv_cb
 
--- FIXME: Add constants for WiFi working modes
-  
+-- | Constant for station mode
+mode_station :: Uint8
+mode_station = 0x01
+
+-- | Constant for soft-AP mode
+mode_soft_ap :: Uint8
+mode_soft_ap = 0x02
+
+-- | Constant for station+soft-AP mode
+mode_station_and_soft_ap :: Uint8
+mode_station_and_soft_ap = 0x03
+
+-- | Note that this should return 'mode_station', 'mode_soft_ap', or
+-- 'mode_station_and_soft_ap'.
 wifi_get_opmode :: Def('[] ':-> Uint8)
 wifi_get_opmode = importProc "wifi_get_opmode" "user_interface.h"
 
@@ -160,23 +188,62 @@ wifi_station_connect = importProc "wifi_station_connect" "user_interface.h"
 wifi_station_disconnect :: Def('[] ':-> IBool)
 wifi_station_disconnect = importProc "wifi_station_disconnect" "user_interface.h"
 
--- FIXME: Add station status constants
+-- | Equivalent to @STATION_IDLE@
+station_idle :: Uint8
+station_idle = extern "STATION_IDLE" "user_interface.h"
 
+-- | Equivalent to @STATION_CONNECTING@
+station_connecting :: Uint8
+station_connecting = extern "STATION_CONNECTING" "user_interface.h"
+
+-- | Equivalent to @STATION_WRONG_PASSWORD@
+station_wrong_password :: Uint8
+station_wrong_password = extern "STATION_WRONG_PASSWORD" "user_interface.h"
+
+-- | Equivalent to @STATION_NO_AP_FOUND@
+station_no_ap_found :: Uint8
+station_no_ap_found = extern "STATION_NO_AP_FOUND" "user_interface.h"
+
+-- | Equivalent to @STATION_CONNECT_FAIL@
+station_connect_fail :: Uint8
+station_connect_fail = extern "STATION_CONNECT_FAIL" "user_interface.h"
+
+-- | Equivalent to @STATION_GOT_IP@
+station_got_ip :: Uint8
+station_got_ip = extern "STATION_GOT_IP" "user_interface.h"
+
+-- | See @STATION_*@ constants for the return values of this
 wifi_station_get_connect_status :: Def('[] ':-> Uint8)
 wifi_station_get_connect_status = importProc "wifi_station_get_connect_status" "user_interface.h"
 
-{--
-typedef void (* scan_done_cb_t)(void *arg, STATUS status);
-typedef enum {
-    OK = 0,
-    FAIL,
-    PENDING,
-    BUSY,
-    CANCEL,
-} STATUS;
---}
--- FIXME (auto-generated)
-wifi_station_scan :: Def('[] ':-> ())
+-- | Equivalent to @STATUS@ enum
+type Status = Uint32
+
+-- | Equivalent to @OK@ of @STATUS@ enum
+status_OK :: Status
+status_OK = extern "OK" "c_types.h"
+
+-- | Equivalent to @FAIL@ of @STATUS@ enum
+status_FAIL :: Status
+status_FAIL = extern "FAIL" "c_types.h"
+
+-- | Equivalent to @PENDING@ of @STATUS@ enum
+status_PENDING :: Status
+status_PENDING = extern "PENDING" "c_types.h"
+
+-- | Equivalent to @BUSY@ of @STATUS@ enum
+status_BUSY :: Status
+status_BUSY = extern "BUSY" "c_types.h"
+
+-- | Equivalent to @CANCEL@ of @STATUS@ enum
+status_CANCEL :: Status
+status_CANCEL = extern "CANCEL" "c_types.h"
+
+-- | Equivalent to 'scan_done_cb_t'
+type ScanDoneCbT s = '[Ptr s (Stored ()), Status] :-> ()
+-- FIXME: I'm not sure if that's the best way to express a void*
+
+wifi_station_scan :: Def('[Ref s ScanConfig, ProcPtr (ScanDoneCbT t)] ':-> IBool)
 wifi_station_scan = importProc "wifi_station_scan" "user_interface.h"
 
 -- FIXME (auto-generated)
