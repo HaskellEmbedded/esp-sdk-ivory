@@ -61,13 +61,13 @@ type ScanConfig = Struct "scan_config"
 -- FIXME: Same deal below with ssid_ap/password_ap/channel_ap (should
 -- be ssid/password/channel)
 SQQ.fromStruct $ PA.StructDef "softap_config"
-  [ PA.Field "ssid_ap" (PA.TyWord PA.Word8) L.NoLoc -- uint8[32]
-  , PA.Field "password_ap" (PA.TyWord PA.Word8) L.NoLoc -- uint8[64]
-  , PA.Field "ssid_len" (PA.TyWord PA.Word8) L.NoLoc
-  , PA.Field "channel_ap" (PA.TyWord PA.Word8) L.NoLoc
-  , PA.Field "authmode" (PA.TyWord PA.Word8) L.NoLoc -- AUTH_MODE?
-  , PA.Field "ssid_hidden" (PA.TyWord PA.Word8) L.NoLoc
-  , PA.Field "max_connection" (PA.TyWord PA.Word8) L.NoLoc
+  [ PA.Field "ssid_ap"         (PA.TyWord PA.Word8) L.NoLoc -- uint8[32]
+  , PA.Field "password_ap"     (PA.TyWord PA.Word8) L.NoLoc -- uint8[64]
+  , PA.Field "ssid_len"        (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "channel_ap"      (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "authmode"        (PA.TyWord PA.Word8) L.NoLoc -- AUTH_MODE?
+  , PA.Field "ssid_hidden"     (PA.TyWord PA.Word8) L.NoLoc
+  , PA.Field "max_connection"  (PA.TyWord PA.Word8) L.NoLoc
   , PA.Field "beacon_interval" (PA.TyWord PA.Word16) L.NoLoc
   ] L.NoLoc
 
@@ -94,6 +94,29 @@ SQQ.fromStruct $ PA.StructDef "ip_info"
 -- | Equivalent to @struct ip_info@
 type IpInfo = Struct "ip_addr"
 
+-- FIXME: event_info should be type Event_Info_u, which is a union.
+--
+-- FIXME: "System_Event_T" is the typename, not "struct
+-- System_Event_T".
+SQQ.fromStruct $ PA.StructDef "System_Event_T"
+  [ PA.Field "event"      (PA.TyWord PA.Word32) L.NoLoc
+  , PA.Field "event_Info" (PA.TyVoid) L.NoLoc
+  ] L.NoLoc
+
+{--
+typedef union {
+        Event_StaMode_Connected_t                       connected;
+        Event_StaMode_Disconnected_t            disconnected;
+        Event_StaMode_AuthMode_Change_t         auth_change;
+        Event_StaMode_Got_IP_t                          got_ip;
+        Event_SoftAPMode_StaConnected_t         sta_connected;
+        Event_SoftAPMode_StaDisconnected_t      sta_disconnected;
+        Event_SoftAPMode_ProbeReqRecved_t   ap_probereqrecved;
+} Event_Info_u;
+--}
+
+type System_Event_T = Struct "System_Event_T"
+
 wifi :: Module
 wifi = package "wifi" $ do
   defStruct (Proxy :: Proxy "station_config")
@@ -101,6 +124,7 @@ wifi = package "wifi" $ do
   defStruct (Proxy :: Proxy "softap_config")
   defStruct (Proxy :: Proxy "ip_addr")
   defStruct (Proxy :: Proxy "ip_info")
+  defStruct (Proxy :: Proxy "System_Event_T")
   incl wifi_get_opmode
   incl wifi_get_opmode_default
   incl wifi_set_opmode
@@ -484,71 +508,89 @@ wifi_set_broadcast_if = importProc "wifi_set_broadcast_if" "user_interface.h"
 wifi_get_broadcast_if :: Def('[] ':-> Uint8)
 wifi_get_broadcast_if = importProc "wifi_get_broadcast_if" "user_interface.h"
 
-{--
-user_interface.h:
-typedef void (* wifi_event_handler_cb_t)(System_Event_t *event);
-typedef struct _esp_event {
-    uint32 event;
-    Event_Info_u event_info;
-} System_Event_t;
+-- | Equivalent to @wifi_event_handler_cb_t@
+type WifiEventHandlerCbT s = '[Ptr s System_Event_T] ':-> ()
 
--- How do I do a union in Ivory? Ugggh...
-typedef union {
-        Event_StaMode_Connected_t                       connected;
-        Event_StaMode_Disconnected_t            disconnected;
-        Event_StaMode_AuthMode_Change_t         auth_change;
-        Event_StaMode_Got_IP_t                          got_ip;
-        Event_SoftAPMode_StaConnected_t         sta_connected;
-        Event_SoftAPMode_StaDisconnected_t      sta_disconnected;
-        Event_SoftAPMode_ProbeReqRecved_t   ap_probereqrecved;
-} Event_Info_u;
-
---}
-
--- FIXME (auto-generated)
-wifi_set_event_handler_cb :: Def('[] ':-> ())
+wifi_set_event_handler_cb :: Def('[ProcPtr (WifiEventHandlerCbT s)] ':-> ())
 wifi_set_event_handler_cb = importProc "wifi_set_event_handler_cb" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_wps_enable :: Def('[] ':-> ())
+-- | Equivalent to @WPS_TYPE_t@
+type WPS_TYPE_t = Sint32
+
+-- | Equivalent to @WPS_TYPE_DISABLE@ of @WPS_TYPE_t@
+wps_type_disable :: WPS_TYPE_t
+wps_type_disable = extern "WPS_TYPE_DISABLE" "user_interface.h"
+
+-- | Equivalent to @WPS_TYPE_PBC@ of @WPS_TYPE_t@
+wps_type_pbc :: WPS_TYPE_t
+wps_type_pbc = extern "WPS_TYPE_PBC" "user_interface.h"
+
+-- | Equivalent to @WPS_TYPE_PIN@ of @WPS_TYPE_t@
+wps_type_pin :: WPS_TYPE_t
+wps_type_pin = extern "WPS_TYPE_PIN" "user_interface.h"
+
+-- | Equivalent to @WPS_TYPE_DISPLAY@ of @WPS_TYPE_t@
+wps_type_display :: WPS_TYPE_t
+wps_type_display = extern "WPS_TYPE_DISPLAY" "user_interface.h"
+
+-- | Equivalent to @WPS_TYPE_MAX@ of @WPS_TYPE_t@
+wps_type_max :: WPS_TYPE_t
+wps_type_max = extern "WPS_TYPE_MAX" "user_interface.h"
+
+wifi_wps_enable :: Def('[WPS_TYPE_t] ':-> IBool)
 wifi_wps_enable = importProc "wifi_wps_enable" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_wps_disable :: Def('[] ':-> ())
+wifi_wps_disable :: Def('[] ':-> IBool)
 wifi_wps_disable = importProc "wifi_wps_disable" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_wps_start :: Def('[] ':-> ())
+wifi_wps_start :: Def('[] ':-> IBool)
 wifi_wps_start = importProc "wifi_wps_start" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_set_wps_cb :: Def('[] ':-> ())
+-- | Equivalent to @wps_st_cb_t@
+type WpsStCbT = '[Sint32] ':-> ()
+
+-- | Equivalent to @WPS_CB_ST_SUCCESS@
+wps_cb_st_success :: Sint32
+wps_cb_st_success = extern "WPS_CB_ST_SUCCESS" "user_interface.h"
+
+-- | Equivalent to @WPS_CB_ST_FAILED@
+wps_cb_st_failed :: Sint32
+wps_cb_st_failed = extern "WPS_CB_ST_FAILED" "user_interface.h"
+
+-- | Equivalent to @WPS_CB_ST_TIMEOUT@
+wps_cb_st_timeout :: Sint32
+wps_cb_st_timeout = extern "WPS_CB_ST_TIMEOUT" "user_interface.h"
+
+-- | Equivalent to @WPS_CB_ST_WEP@
+wps_cb_st_wep :: Sint32
+wps_cb_st_wep = extern "WPS_CB_ST_WEP" "user_interface.h"
+
+wifi_set_wps_cb :: Def('[ProcPtr WpsStCbT] ':-> IBool)
 wifi_set_wps_cb = importProc "wifi_set_wps_cb" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_register_send_pkt_freedom_cb :: Def('[] ':-> ())
+-- | Equivalent to @freedom_outside_cb_t@
+type FreedomOutsideCbT = '[Uint8] ':-> ()
+
+wifi_register_send_pkt_freedom_cb :: Def('[ProcPtr FreedomOutsideCbT] ':-> Sint32)
 wifi_register_send_pkt_freedom_cb = importProc "wifi_register_send_pkt_freedom_cb" "user_interface.h"
 
--- FIXME (auto-generated)
 wifi_unregister_send_pkt_freedom_cb :: Def('[] ':-> ())
 wifi_unregister_send_pkt_freedom_cb = importProc "wifi_unregister_send_pkt_freedom_cb" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_send_pkt_freedom :: Def('[] ':-> ())
+wifi_send_pkt_freedom :: Def('[CBytes s, Sint32, IBool] ':-> Sint32)
 wifi_send_pkt_freedom = importProc "wifi_send_pkt_freedom" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_rfid_locp_recv_open :: Def('[] ':-> ())
+wifi_rfid_locp_recv_open :: Def('[] ':-> Sint32)
 wifi_rfid_locp_recv_open = importProc "wifi_rfid_locp_recv_open" "user_interface.h"
 
--- FIXME (auto-generated)
 wifi_rfid_locp_recv_close :: Def('[] ':-> ())
 wifi_rfid_locp_recv_close = importProc "wifi_rfid_locp_recv_close" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_register_rfid_locp_recv_cb :: Def('[] ':-> ())
+-- | Equivalent to @rfid_locp_cb_t@
+type RfidLocpCbT s = '[CBytes s, Sint32, Sint32] ':-> ()
+
+wifi_register_rfid_locp_recv_cb :: Def('[ProcPtr (RfidLocpCbT s)] ':-> Sint32)
 wifi_register_rfid_locp_recv_cb = importProc "wifi_register_rfid_locp_recv_cb" "user_interface.h"
 
--- FIXME (auto-generated)
 wifi_unregister_rfid_locp_recv_cb :: Def('[] ':-> ())
 wifi_unregister_rfid_locp_recv_cb = importProc "wifi_unregister_rfid_locp_recv_cb" "user_interface.h"
