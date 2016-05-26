@@ -484,6 +484,27 @@ wifi_set_broadcast_if = importProc "wifi_set_broadcast_if" "user_interface.h"
 wifi_get_broadcast_if :: Def('[] ':-> Uint8)
 wifi_get_broadcast_if = importProc "wifi_get_broadcast_if" "user_interface.h"
 
+{--
+user_interface.h:
+typedef void (* wifi_event_handler_cb_t)(System_Event_t *event);
+typedef struct _esp_event {
+    uint32 event;
+    Event_Info_u event_info;
+} System_Event_t;
+
+-- How do I do a union in Ivory? Ugggh...
+typedef union {
+        Event_StaMode_Connected_t                       connected;
+        Event_StaMode_Disconnected_t            disconnected;
+        Event_StaMode_AuthMode_Change_t         auth_change;
+        Event_StaMode_Got_IP_t                          got_ip;
+        Event_SoftAPMode_StaConnected_t         sta_connected;
+        Event_SoftAPMode_StaDisconnected_t      sta_disconnected;
+        Event_SoftAPMode_ProbeReqRecved_t   ap_probereqrecved;
+} Event_Info_u;
+
+--}
+
 -- FIXME (auto-generated)
 wifi_set_event_handler_cb :: Def('[] ':-> ())
 wifi_set_event_handler_cb = importProc "wifi_set_event_handler_cb" "user_interface.h"
