@@ -37,6 +37,9 @@ SQQ.fromStruct $ PA.StructDef "station_config"
   , PA.Field "bssid"     (PA.TyWord PA.Word32) L.NoLoc -- uint8[6]
   ] L.NoLoc
 
+-- | Equivalent to @struct station_config@
+type StationConfig = Struct "station_config"
+
 -- FIXME: Get pointer types into this structure
 --
 -- FIXME: 'ssid_scan' should be 'ssid', 'bssid_scan' should be
@@ -49,6 +52,9 @@ SQQ.fromStruct $ PA.StructDef "scan_config"
   , PA.Field "channel"     (PA.TyWord PA.Word8) L.NoLoc
   , PA.Field "show_hidden" (PA.TyWord PA.Word8) L.NoLoc
   ] L.NoLoc
+
+-- | Equivalent to @struct scan_config@
+type ScanConfig = Struct "scan_config"
 
 -- FIXME: Get array types into this structure as marked
 -- 
@@ -65,20 +71,36 @@ SQQ.fromStruct $ PA.StructDef "softap_config"
   , PA.Field "beacon_interval" (PA.TyWord PA.Word16) L.NoLoc
   ] L.NoLoc
 
--- | Equivalent to @struct station_config@
-type StationConfig = Struct "station_config"
-
--- | Equivalent to @struct scan_config@
-type ScanConfig = Struct "scan_config"
-
 -- | Equivalent to @struct softap_config@
 type SoftAPConfig = Struct "softap_config"
+
+-- FIXME: This is a more general type. Should it be elsewhere?
+--
+-- FIXME (maybe): 'ip_addr_t' is typedef'ed to 'struct ip_addr' and
+-- it'd be nice to use the former.
+SQQ.fromStruct $ PA.StructDef "ip_addr"
+  [ PA.Field "addr" (PA.TyWord PA.Word32) L.NoLoc
+  ] L.NoLoc
+
+-- | Equivalent to @struct ip_addr@ or @ip_addr_t@
+type IpAddr = Struct "ip_addr"
+
+SQQ.fromStruct $ PA.StructDef "ip_info"
+  [ PA.Field "ip"      (PA.TyStruct "ip_addr") L.NoLoc
+  , PA.Field "netmask" (PA.TyStruct "ip_addr") L.NoLoc
+  , PA.Field "gw"      (PA.TyStruct "ip_addr") L.NoLoc
+  ] L.NoLoc
+
+-- | Equivalent to @struct ip_info@
+type IpInfo = Struct "ip_addr"
 
 wifi :: Module
 wifi = package "wifi" $ do
   defStruct (Proxy :: Proxy "station_config")
   defStruct (Proxy :: Proxy "scan_config")
   defStruct (Proxy :: Proxy "softap_config")
+  defStruct (Proxy :: Proxy "ip_addr")
+  defStruct (Proxy :: Proxy "ip_info")
   incl wifi_get_opmode
   incl wifi_get_opmode_default
   incl wifi_set_opmode
@@ -375,56 +397,91 @@ wifi_softap_reset_dhcps_lease_time = importProc "wifi_softap_reset_dhcps_lease_t
 wifi_softap_dhcps_status :: Def('[] ':-> DhcpStatus)
 wifi_softap_dhcps_status = importProc "wifi_softap_dhcps_status" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_softap_set_dhcps_offer_option :: Def('[] ':-> ())
+-- | Equivalent to @dhcps_offer_option@
+type DhcpsOfferOption = Uint8
+
+-- | Equivalent to @OFFER_START@ of @dhcps_offer_option@
+offer_start :: DhcpsOfferOption
+offer_start = extern "OFFER_START" "user_interface.h"
+
+-- | Equivalent to @OFFER_ROUTER@ of @dhcps_offer_option@
+offer_router :: DhcpsOfferOption
+offer_router = extern "OFFER_ROUTER" "user_interface.h"
+
+-- | Equivalent to @OFFER_END@ of @dhcps_offer_option@
+offer_end :: DhcpsOfferOption
+offer_end = extern "OFFER_END" "user_interface.h"
+
+-- FIXME: This void* is a bit hairy
+wifi_softap_set_dhcps_offer_option :: Def('[DhcpsOfferOption, Ptr s (Stored ())] ':-> IBool)
 wifi_softap_set_dhcps_offer_option = importProc "wifi_softap_set_dhcps_offer_option" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_set_phy_mode :: Def('[] ':-> ())
+-- | Equivalent to @phy_mode@
+type PhyMode = Sint32
+
+-- | Equivalent to @PHY_MODE_11B@ of @phy_mode@
+phy_mode_11b :: PhyMode
+phy_mode_11b = extern "PHY_MODE_11B" "user_interface.h"
+
+-- | Equivalent to @PHY_MODE_11G@ of @phy_mode@
+phy_mode_11g :: PhyMode
+phy_mode_11g = extern "PHY_MODE_11G" "user_interface.h"
+
+-- | Equivalent to @PHY_MODE_11N@ of @phy_mode@
+phy_mode_11n :: PhyMode
+phy_mode_11n = extern "PHY_MODE_11N" "user_interface.h"
+
+wifi_set_phy_mode :: Def('[PhyMode] ':-> IBool)
 wifi_set_phy_mode = importProc "wifi_set_phy_mode" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_get_phy_mode :: Def('[] ':-> ())
+wifi_get_phy_mode :: Def('[] ':-> PhyMode)
 wifi_get_phy_mode = importProc "wifi_get_phy_mode" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_get_ip_info :: Def('[] ':-> ())
-wifi_get_ip_info = importProc "wifi_get_ip_info" "user_interface.h"
+wifi_get_ip_info :: Def('[Uint8, Ref s IpInfo] ':-> ())
+wifi_get_ip_info = importProc "wifi_get_ip_info" "ip_addr.h"
 
--- FIXME (auto-generated)
-wifi_set_ip_info :: Def('[] ':-> ())
-wifi_set_ip_info = importProc "wifi_set_ip_info" "user_interface.h"
+wifi_set_ip_info :: Def('[Uint8, Ref s IpInfo] ':-> IBool)
+wifi_set_ip_info = importProc "wifi_set_ip_info" "ip_addr.h"
 
--- FIXME (auto-generated)
-wifi_set_macaddr :: Def('[] ':-> ())
+-- FIXME: Turn 2nd argument to be uint8[6]
+wifi_set_macaddr :: Def('[Uint8, CBytes s] ':-> IBool)
 wifi_set_macaddr = importProc "wifi_set_macaddr" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_get_macaddr :: Def('[] ':-> ())
+-- FIXME: Turn 2nd argument to be uint8[6]
+wifi_get_macaddr :: Def('[Uint8, CBytes s] ':-> IBool)
 wifi_get_macaddr = importProc "wifi_get_macaddr" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_set_sleep_type :: Def('[] ':-> ())
+-- | Equivalent to @enum sleep_type@
+type SleepType = Sint32
+
+-- | Equivalent to @NONE_SLEEP_T@ of @enum sleep_type@
+none_sleep_t :: SleepType
+none_sleep_t = extern "NONE_SLEEP_T" "user_interface.h"
+
+-- | Equivalent to @LIGHT_SLEEP_T@ of @enum sleep_type@
+light_sleep_t :: SleepType
+light_sleep_t = extern "LIGHT_SLEEP_T" "user_interface.h"
+
+-- | Equivalent to @MODEM_SLEEP_T@ of @enum sleep_type@
+modem_sleep_t :: SleepType
+modem_sleep_t = extern "MODEM_SLEEP_T" "user_interface.h"
+
+wifi_set_sleep_type :: Def('[SleepType] ':-> IBool)
 wifi_set_sleep_type = importProc "wifi_set_sleep_type" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_get_sleep_type :: Def('[] ':-> ())
+wifi_get_sleep_type :: Def('[] ':-> SleepType)
 wifi_get_sleep_type = importProc "wifi_get_sleep_type" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_status_led_install :: Def('[] ':-> ())
+wifi_status_led_install :: Def('[Uint8, Uint32, Uint8] ':-> ())
 wifi_status_led_install = importProc "wifi_status_led_install" "user_interface.h"
 
--- FIXME (auto-generated)
 wifi_status_led_uninstall :: Def('[] ':-> ())
 wifi_status_led_uninstall = importProc "wifi_status_led_uninstall" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_set_broadcast_if :: Def('[] ':-> ())
+wifi_set_broadcast_if :: Def('[Uint8] ':-> IBool)
 wifi_set_broadcast_if = importProc "wifi_set_broadcast_if" "user_interface.h"
 
--- FIXME (auto-generated)
-wifi_get_broadcast_if :: Def('[] ':-> ())
+wifi_get_broadcast_if :: Def('[] ':-> Uint8)
 wifi_get_broadcast_if = importProc "wifi_get_broadcast_if" "user_interface.h"
 
 -- FIXME (auto-generated)
